@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TeamGrid App</title>
+
+  <!-- React and Babel -->
+  <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Firebase SDK (Compat Versions) -->
+  <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore-compat.js"></script>
+
+  <script>
+    // Initialize Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBMTgkcLQy25yv_y7A0ZYiFQLNF_EYQpCA",
+      authDomain: "databaseforwebsite-e35ea.firebaseapp.com",
+      projectId: "databaseforwebsite-e35ea",
+      storageBucket: "databaseforwebsite-e35ea.appspot.com",
+      messagingSenderId: "359986441440",
+      appId: "1:359986441440:web:c83bf520dff81f093d3485",
+      measurementId: "G-WCV7HTD0X1"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    window.db = db; // Make db available globally
+  </script>
+</head>
+
+<body>
+    <div class="container">
+  <div id="navbar"></div>
+  <div id="root"></div>
+    </div>
+  <script type="text/babel">
+    function Navbar() {
+      return (
+        <nav>
+          <a href="project.html">Projekt</a>
+          <a href="people.html">People</a>
+          <a href="notes.html">Poznámky</a>
+        </nav>
+      );
+    }
+
+    // React component for displaying and managing team members
+    function TeamGrid() {
+      const [teamMembers, setTeamMembers] = React.useState([]);
+
+      // Fetch team members from Firestore when the component loads
+      React.useEffect(() => {
+        const fetchTeamMembers = async () => {
+          try {
+            // Ensure that window.db is available
+            if (!window.db) {
+              console.error("Firestore is not initialized properly.");
+              return;
+            }
+            const querySnapshot = await window.db.collection("teamMates").get();
+            const members = querySnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+            setTeamMembers(members);
+          } catch (err) {
+            console.error("Error loading team members:", err);
+          }
+        };
+
+        fetchTeamMembers();
+      }, []);
+
+      // Add a new team member to Firestore
+      const handleAddMember = async () => {
+        const newMember = {
+          name: "New Member",
+          imgSrc: "https://via.placeholder.com/150",
+          info: "This is a new team member."
+        };
+        try {
+          const docRef = await window.db.collection("teamMates").add(newMember);
+          setTeamMembers(prevMembers => [...prevMembers, { id: docRef.id, ...newMember }]);
+        } catch (err) {
+          console.error("Error adding team member:", err);
+        }
+      };
+
+      // Remove a team member from Firestore
+      const handleRemoveMember = async (id) => {
+        try {
+          await window.db.collection("teamMates").doc(id).delete();
+          setTeamMembers(prevMembers => prevMembers.filter(member => member.id !== id));
+        } catch (err) {
+          console.error("Error removing team member:", err);
+        }
+      };
+
+      return (
+        <div className="team-grid">
+          {teamMembers.map((member, index) => (
+            <div key={index} className="team-member">
+              <button className="remove-button" onClick={() => handleRemoveMember(member.id)}>x</button>
+              <img src={member.imgSrc} alt={member.name} />
+              <p>{member.name}</p>
+              <p>{member.info}</p>
+            </div>
+          ))}
+          <div className="add-member" onClick={handleAddMember}>+</div>
+        </div>
+      );
+    }
+
+    // Render the components
+    ReactDOM.render(<Navbar />, document.getElementById('navbar'));
+    ReactDOM.render(<TeamGrid />, document.getElementById('root'));
+  </script>
+</body>
+</html>
