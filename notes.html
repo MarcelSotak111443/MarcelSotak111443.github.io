@@ -32,10 +32,13 @@
     <div class="container">
       <div id="navbar"></div>
       <div class="content">
+        <div class="note_container">
         <h1>Notes Dashboard</h1>
 
         <!-- Section to display notes and add new ones -->
+        
         <div id="notes"></div>
+        </div>
       </div>
     </div>
 
@@ -51,7 +54,7 @@
         );
       }
 
-      // Notes Component (Fetch and display notes, add new ones)
+      // Notes Component (Fetch, add, and delete notes)
       function Notes() {
         const [notes, setNotes] = React.useState([]);
         const [newNote, setNewNote] = React.useState("");
@@ -77,11 +80,17 @@
               note: newNote,
               date: new Date(newDate) // Convert date input to Date object
             };
-            await window.db.collection('notes').add(noteData);
-            setNotes([...notes, noteData]);
+            const docRef = await window.db.collection('notes').add(noteData);
+            setNotes([...notes, { id: docRef.id, ...noteData }]);
             setNewNote("");  // Clear input
             setNewDate("");  // Clear input
           }
+        };
+
+        // Handle note deletion
+        const handleRemoveNote = async (id) => {
+          await window.db.collection('notes').doc(id).delete(); // Delete from Firestore
+          setNotes(notes.filter(note => note.id !== id)); // Update state
         };
 
         return (
@@ -91,6 +100,7 @@
               {notes.map((note) => (
                 <li key={note.id}>
                   <strong>{new Date(note.date.seconds * 1000).toLocaleDateString()}</strong>: {note.note}
+                  <button onClick={() => handleRemoveNote(note.id)} style={{ marginLeft: '10px', color: 'red' }}>x</button> {/* Delete button */}
                 </li>
               ))}
             </ul>
