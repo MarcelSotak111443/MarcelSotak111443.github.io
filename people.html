@@ -51,70 +51,97 @@
 
     // React component for displaying and managing team members
     function TeamGrid() {
-      const [teamMembers, setTeamMembers] = React.useState([]);
+  const [teamMembers, setTeamMembers] = React.useState([]);
+  const [newMemberName, setNewMemberName] = React.useState("");
+  const [newMemberInfo, setNewMemberInfo] = React.useState("");
 
-      // Fetch team members from Firestore when the component loads
-      React.useEffect(() => {
-        const fetchTeamMembers = async () => {
-          try {
-            // Ensure that window.db is available
-            if (!window.db) {
-              console.error("Firestore is not initialized properly.");
-              return;
-            }
-            const querySnapshot = await window.db.collection("teamMates").get();
-            const members = querySnapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            }));
-            setTeamMembers(members);
-          } catch (err) {
-            console.error("Error loading team members:", err);
-          }
-        };
-
-        fetchTeamMembers();
-      }, []);
-
-      // Add a new team member to Firestore
-      const handleAddMember = async () => {
-        const newMember = {
-          name: "New Member",
-          imgSrc: "https://via.placeholder.com/150",
-          info: "This is a new team member."
-        };
-        try {
-          const docRef = await window.db.collection("teamMates").add(newMember);
-          setTeamMembers(prevMembers => [...prevMembers, { id: docRef.id, ...newMember }]);
-        } catch (err) {
-          console.error("Error adding team member:", err);
+  // Fetch team members from Firestore when the component loads
+  React.useEffect(() => {
+    const fetchTeamMembers = async () => {
+      try {
+        if (!window.db) {
+          console.error("Firestore is not initialized properly.");
+          return;
         }
-      };
+        const querySnapshot = await window.db.collection("teamMates").get();
+        const members = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setTeamMembers(members);
+      } catch (err) {
+        console.error("Error loading team members:", err);
+      }
+    };
 
-      // Remove a team member from Firestore
-      const handleRemoveMember = async (id) => {
-        try {
-          await window.db.collection("teamMates").doc(id).delete();
-          setTeamMembers(prevMembers => prevMembers.filter(member => member.id !== id));
-        } catch (err) {
-          console.error("Error removing team member:", err);
-        }
-      };
+    fetchTeamMembers();
+  }, []);
 
-      return (
-        <div className="team-grid">
-          {teamMembers.map((member, index) => (
-            <div key={index} className="team-member">
-              <button className="remove-button" onClick={() => handleRemoveMember(member.id)}>x</button>
-              <img src={member.imgSrc} alt={member.name} />
-              <p>{member.name}</p>
-              <p>{member.info}</p>
-            </div>
-          ))}
-          <div className="add-member" onClick={handleAddMember}>+</div>
-        </div>
-      );
+  // Add a new team member to Firestore
+  const handleAddMember = async () => {
+    if (!newMemberName.trim() || !newMemberInfo.trim()) {
+      alert("Please enter both name and description.");
+      return;
     }
+
+    const newMember = {
+      name: newMemberName,
+      imgSrc: "https://via.placeholder.com/150", // Placeholder image
+      info: newMemberInfo
+    };
+
+    try {
+      const docRef = await window.db.collection("teamMates").add(newMember);
+      setTeamMembers(prevMembers => [...prevMembers, { id: docRef.id, ...newMember }]);
+      setNewMemberName(""); // Clear input fields
+      setNewMemberInfo("");
+    } catch (err) {
+      console.error("Error adding team member:", err);
+    }
+  };
+
+  // Remove a team member from Firestore
+  const handleRemoveMember = async (id) => {
+    try {
+      await window.db.collection("teamMates").doc(id).delete();
+      setTeamMembers(prevMembers => prevMembers.filter(member => member.id !== id));
+    } catch (err) {
+      console.error("Error removing team member:", err);
+    }
+  };
+
+  return (
+    <div className="team-grid">
+      <div className="team-members">
+        {teamMembers.map((member) => (
+          <div key={member.id} className="team-member">
+            <button className="remove-button" onClick={() => handleRemoveMember(member.id)}>x</button>
+            <img src={member.imgSrc} alt={member.name} />
+            <p>{member.name}</p>
+            <p>{member.info}</p>
+          </div>
+        ))}
+      </div>
+      <div className="add-member-form">
+        <h3>Add New Member</h3>
+        <input
+          type="text"
+          placeholder="Name"
+          value={newMemberName}
+          onChange={(e) => setNewMemberName(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Description"
+          value={newMemberInfo}
+          onChange={(e) => setNewMemberInfo(e.target.value)}
+        />
+        <button onClick={handleAddMember}>Add Member</button>
+      </div>
+    </div>
+  );
+}
+
 
     // Render the components
     ReactDOM.render(<Navbar />, document.getElementById('navbar'));
