@@ -13,15 +13,14 @@
     <script>
       // Initialize Firebase
       const firebaseConfig = {
-        apiKey: "AIzaSyBMTgkcLQy25yv_y7A0ZYiFQLNF_EYQpCA",
-        authDomain: "databaseforwebsite-e35ea.firebaseapp.com",
-        projectId: "databaseforwebsite-e35ea",
-        storageBucket: "databaseforwebsite-e35ea.appspot.com",
-        messagingSenderId: "359986441440",
-        appId: "1:359986441440:web:c83bf520dff81f093d3485",
-        measurementId: "G-WCV7HTD0X1"
-      };
-
+  apiKey: "AIzaSyBMTgkcLQy25yv_y7A0ZYiFQLNF_EYQpCA",
+  authDomain: "databaseforwebsite-e35ea.firebaseapp.com",
+  projectId: "databaseforwebsite-e35ea",
+  storageBucket: "databaseforwebsite-e35ea.firebasestorage.app",
+  messagingSenderId: "359986441440",
+  appId: "1:359986441440:web:c83bf520dff81f093d3485",
+  measurementId: "G-WCV7HTD0X1"
+};
       firebase.initializeApp(firebaseConfig);
       const db = firebase.firestore();
       window.db = db; // Make db available globally
@@ -99,7 +98,7 @@
             <ul>
               {notes.map((note) => (
                 <li key={note.id}>
-                  <strong>{new Date(note.date.seconds * 1000).toLocaleDateString()}</strong>: {note.note}
+                  <strong>{note.date.toDate().toLocaleDateString()}</strong>: {note.note}
                   <button onClick={() => handleRemoveNote(note.id)} style={{ marginLeft: '10px', color: 'red' }}>x</button> {/* Delete button */}
                 </li>
               ))}
