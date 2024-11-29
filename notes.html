@@ -55,72 +55,93 @@
 
       // Notes Component (Fetch, add, and delete notes)
       function Notes() {
-        const [notes, setNotes] = React.useState([]);
-        const [newNote, setNewNote] = React.useState("");
-        const [newDate, setNewDate] = React.useState("");
+  const [notes, setNotes] = React.useState([]);
+  const [newNote, setNewNote] = React.useState("");
+  const [newDate, setNewDate] = React.useState("");
 
-        // Fetch notes from Firestore on component load
-        React.useEffect(() => {
-          const fetchNotes = async () => {
-            const querySnapshot = await window.db.collection('notes').get();
-            const notesData = querySnapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            }));
-            setNotes(notesData);
-          };
-          fetchNotes();
-        }, []); 
+  // Fetch notes from Firestore on component load
+  React.useEffect(() => {
+    const fetchNotes = async () => {
+      const querySnapshot = await window.db.collection('notes').orderBy('date', 'asc').get();
+      const notesData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setNotes(notesData);
+    };
+    fetchNotes();
+  }, []);
 
-        // Handle new note submission
-        const handleAddNote = async () => {
-          if (newNote && newDate) {
-            const noteData = {
-              note: newNote,
-              date: new Date(newDate) // Convert date input to Date object
-            };
-            const docRef = await window.db.collection('notes').add(noteData);
-            setNotes([...notes, { id: docRef.id, ...noteData }]);
-            setNewNote("");  // Clear input
-            setNewDate("");  // Clear input
-          }
-        };
+  // Handle new note submission
+  const handleAddNote = async () => {
+    if (newNote && newDate) {
+      const noteData = {
+        note: newNote,
+        date: new Date(newDate), // Stored as a Firestore Timestamp
+      };
 
-        // Handle note deletion
-        const handleRemoveNote = async (id) => {
-          await window.db.collection('notes').doc(id).delete(); // Delete from Firestore
-          setNotes(notes.filter(note => note.id !== id)); // Update state
-        };
+      // Add to "notes" collection
+      const docRef = await window.db.collection('notes').add(noteData);
 
-        return (
-          <div>
-            <h2>All Notes</h2>
-            <ul>
-              {notes.map((note) => (
-                <li key={note.id}>
-                  <strong>{note.date.toDate().toLocaleDateString()}</strong>: {note.note}
-                  <button onClick={() => handleRemoveNote(note.id)} style={{ marginLeft: '10px', color: 'red' }}>x</button> {/* Delete button */}
-                </li>
-              ))}
-            </ul>
+      // Add to "notes-zaloha" collection (backup)
+      await window.db.collection('notes-zaloha').add(noteData);
 
-            <h3>Add a New Note</h3>
-            <textarea
-              value={newNote}
-              onChange={(e) => setNewNote(e.target.value)}
-              placeholder="Enter your note"
-            />
-            <br />
-            <input
-              type="date"
-              value={newDate}
-              onChange={(e) => setNewDate(e.target.value)}
-            />
-            <br />
-            <button onClick={handleAddNote}>Add Note</button>
-          </div>
-        );
-      }
+      // Update state
+      setNotes([...notes, { id: docRef.id, ...noteData }]);
+      setNewNote(""); // Clear input
+      setNewDate(""); // Clear input
+    }
+  };
+
+  // Handle note deletion (only from "notes" collection)
+  const handleRemoveNote = async (id) => {
+    await window.db.collection('notes').doc(id).delete(); // Delete from Firestore
+    setNotes(notes.filter(note => note.id !== id)); // Update state
+  };
+
+  return (
+    <div>
+      <h2>All Notes</h2>
+      <ul>
+        {notes.map((note) => (
+          <li key={note.id}>
+            <strong>
+              {
+                // Handle different date formats
+                note.date.toDate
+                  ? note.date.toDate().toLocaleDateString() // Firestore Timestamp
+                  : new Date(note.date).toLocaleDateString() // String or JS Date
+              }
+            </strong>
+            : {note.note}
+            <button
+              onClick={() => handleRemoveNote(note.id)}
+              style={{ marginLeft: '10px', color: 'red' }}
+            >
+              x
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <h3>Add a New Note</h3>
+      <textarea
+        value={newNote}
+        onChange={(e) => setNewNote(e.target.value)}
+        placeholder="Enter your note"
+      />
+      <br />
+      <input
+        type="date"
+        value={newDate}
+        onChange={(e) => setNewDate(e.target.value)}
+      />
+      <br />
+      <button onClick={handleAddNote}>Add Note</button>
+    </div>
+  );
+}
+
 
       // Render the Navbar and Notes components
       const navbarContainer = document.getElementById('navbar');
