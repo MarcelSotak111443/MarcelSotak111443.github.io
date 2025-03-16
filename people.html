@@ -1,151 +1,198 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TeamGrid App</title>
+<html>
+  <head>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Firebase SDK (Compat Versions) -->
+    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-storage-compat.js"></script>
 
-  <!-- React and Babel -->
-  <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
-  <link rel="stylesheet" href="styles.css">
+    <script>
+      // Initialize Firebase
+      const firebaseConfig = {
+        apiKey: "AIzaSyBMTgkcLQy25yv_y7A0ZYiFQLNF_EYQpCA",
+        authDomain: "databaseforwebsite-e35ea.firebaseapp.com",
+        projectId: "databaseforwebsite-e35ea",
+        storageBucket: "databaseforwebsite-e35ea.appspot.com",
+        messagingSenderId: "359986441440",
+        appId: "1:359986441440:web:c83bf520dff81f093d3485",
+        measurementId: "G-WCV7HTD0X1"
+      };
 
-  <!-- Firebase SDK (Compat Versions) -->
-  <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore-compat.js"></script>
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+      const storage = firebase.storage();
+      window.db = db; 
+      window.storage = storage;
+    </script>
 
-  <script>
-    // Initialize Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyBMTgkcLQy25yv_y7A0ZYiFQLNF_EYQpCA",
-      authDomain: "databaseforwebsite-e35ea.firebaseapp.com",
-      projectId: "databaseforwebsite-e35ea",
-      storageBucket: "databaseforwebsite-e35ea.appspot.com",
-      messagingSenderId: "359986441440",
-      appId: "1:359986441440:web:c83bf520dff81f093d3485",
-      measurementId: "G-WCV7HTD0X1"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    window.db = db; // Make db available globally
-  </script>
-</head>
-
-<body>
+  </head>
+  <body>
     <div class="container">
-  <div id="navbar"></div>
-  <div id="root"></div>
+      <div id="navbar"></div>
+      <div id="content"></div>
     </div>
-  <script type="text/babel">
-    function Navbar() {
-      return (
-        <nav>
-          <a href="project.html">Projekt</a>
-          <a href="people.html">People</a>
-          <a href="notes.html">Poznámky</a>
-        </nav>
-      );
-    }
 
-    // React component for displaying and managing team members
-    function TeamGrid() {
-  const [teamMembers, setTeamMembers] = React.useState([]);
-  const [newMemberName, setNewMemberName] = React.useState("");
-  const [newMemberInfo, setNewMemberInfo] = React.useState("");
-
-  // Fetch team members from Firestore when the component loads
-  React.useEffect(() => {
-    const fetchTeamMembers = async () => {
-      try {
-        if (!window.db) {
-          console.error("Firestore is not initialized properly.");
-          return;
-        }
-        const querySnapshot = await window.db.collection("teamMates").get();
-        const members = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setTeamMembers(members);
-      } catch (err) {
-        console.error("Error loading team members:", err);
+    <script type="text/babel">
+      function Navbar() {
+        return (
+          <nav>
+            <a href="project.html">Projekt</a>
+            <a href="people.html">People</a>
+            <a href="notes.html">Poznámky</a>
+          </nav>
+        );
       }
-    };
 
-    fetchTeamMembers();
-  }, []);
+      function TeamGrid() {
+        const [teamMembers, setTeamMembers] = React.useState([]);
+        const [newMemberName, setNewMemberName] = React.useState("");
+        const [newMemberInfo, setNewMemberInfo] = React.useState("");
+        const [image, setImage] = React.useState(null);
 
-  // Add a new team member to Firestore
-  const handleAddMember = async () => {
-    if (!newMemberName.trim() || !newMemberInfo.trim()) {
-      alert("Please enter both name and description.");
-      return;
-    }
+        React.useEffect(() => {
+          const fetchTeamMembers = async () => {
+            try {
+              if (!window.db) {
+                console.error("Firestore is not initialized properly.");
+                return;
+              }
+              const querySnapshot = await window.db.collection("teamMates").get();
+              const members = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+              }));
+              setTeamMembers(members);
+            } catch (err) {
+              console.error("Error loading team members:", err);
+            }
+          };
 
-    const newMember = {
-      name: newMemberName,
-      imgSrc: "https://via.placeholder.com/150", // Placeholder image
-      info: newMemberInfo
-    };
+          fetchTeamMembers();
+        }, []);
 
-    try {
-      const docRef = await window.db.collection("teamMates").add(newMember);
-      setTeamMembers(prevMembers => [...prevMembers, { id: docRef.id, ...newMember }]);
-      setNewMemberName(""); // Clear input fields
-      setNewMemberInfo("");
-    } catch (err) {
-      console.error("Error adding team member:", err);
-    }
-  };
+        const handleAddMember = async () => {
+          if (!newMemberName.trim() || !newMemberInfo.trim() || !image) {
+            alert("Please enter name, description, and select an image.");
+            return;
+          }
 
-  // Remove a team member from Firestore
-  const handleRemoveMember = async (id) => {
-    try {
-      await window.db.collection("teamMates").doc(id).delete();
-      setTeamMembers(prevMembers => prevMembers.filter(member => member.id !== id));
-    } catch (err) {
-      console.error("Error removing team member:", err);
-    }
-  };
+          // 1. Nahranie obrázka do Firebase Storage
+          const storageRef = window.storage.ref(`teamImages/${image.name}`);
+          await storageRef.put(image);
+          const imageUrl = await storageRef.getDownloadURL();
 
-  return (
-    <div className="team-grid">
-      <div className="team-members">
-        {teamMembers.map((member) => (
-          <div key={member.id} className="team-member">
-            <button className="remove-button" onClick={() => handleRemoveMember(member.id)}>x</button>
-            <img src={member.imgSrc} alt={member.name} />
-            <p>{member.name}</p>
-            <p>{member.info}</p>
+          // 2. Uloženie člena do Firestore s URL obrázka
+          const newMember = {
+            name: newMemberName,
+            imgSrc: imageUrl,
+            info: newMemberInfo
+          };
+
+          try {
+            const docRef = await window.db.collection("teamMates").add(newMember);
+            setTeamMembers(prevMembers => [...prevMembers, { id: docRef.id, ...newMember }]);
+            setNewMemberName("");
+            setNewMemberInfo("");
+            setImage(null);
+          } catch (err) {
+            console.error("Error adding team member:", err);
+          }
+        };
+
+        const handleRemoveMember = async (id) => {
+          try {
+            await window.db.collection("teamMates").doc(id).delete();
+            setTeamMembers(prevMembers => prevMembers.filter(member => member.id !== id));
+          } catch (err) {
+            console.error("Error removing team member:", err);
+          }
+        };
+
+        const handleChangeImage = async (id) => {
+          const fileInput = document.createElement("input");
+          fileInput.type = "file";
+          fileInput.accept = "image/*";
+          fileInput.onchange = async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const storageRef = window.storage.ref(`teamImages/${file.name}`);
+            await storageRef.put(file);
+            const imageUrl = await storageRef.getDownloadURL();
+
+            await window.db.collection("teamMates").doc(id).update({ imgSrc: imageUrl });
+
+            setTeamMembers(prevMembers =>
+              prevMembers.map(member => (member.id === id ? { ...member, imgSrc: imageUrl } : member))
+            );
+          };
+
+          fileInput.click();
+        };
+
+        return (
+          <div>
+            <div className="team-grid">
+              <div className="team-members">
+                {teamMembers.map((member) => (
+                  <div key={member.id} className="team-member">
+                    <button className="remove-button" onClick={() => handleRemoveMember(member.id)}>x</button>
+                    <img 
+                      src={member.imgSrc} 
+                      alt={member.name} 
+                      style={{ cursor: "pointer", width: "100px", height: "100px", objectFit: "cover" }} 
+                      onClick={() => handleChangeImage(member.id)} 
+                    />
+                    <p>{member.name}</p>
+                    <p>{member.info}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="add-member-form">
+              <h3>Add New Member</h3>
+              <input
+                type="text"
+                placeholder="Name"
+                value={newMemberName}
+                onChange={(e) => setNewMemberName(e.target.value)}
+              />
+              <textarea
+                rows={3}
+                wrap="soft"
+                placeholder="Description"
+                value={newMemberInfo}
+                onChange={(e) => setNewMemberInfo(e.target.value)}
+              />
+              <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files[0])} />
+              <button onClick={handleAddMember}>Add Member</button>
+            </div>
           </div>
-        ))}
-      </div>
-      <div className="add-member-form">
-        <h3>Add New Member</h3>
-        <input
-          type="text"
-          placeholder="Name"
-          value={newMemberName}
-          onChange={(e) => setNewMemberName(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Description"
-          value={newMemberInfo}
-          onChange={(e) => setNewMemberInfo(e.target.value)}
-        />
-        <button onClick={handleAddMember}>Add Member</button>
-      </div>
-    </div>
-  );
-}
+        );
+      }
 
+      const navbarContainer = document.getElementById('navbar');
+      const contentContainer = document.getElementById('content');
 
-    // Render the components
-    ReactDOM.render(<Navbar />, document.getElementById('navbar'));
-    ReactDOM.render(<TeamGrid />, document.getElementById('root'));
-  </script>
-</body>
+      if (navbarContainer) {
+          const navbarRoot = ReactDOM.createRoot(navbarContainer);
+          navbarRoot.render(<Navbar />);
+      } else {
+          console.error("Navbar element not found!");
+      }
+
+      if (contentContainer) {
+          const contentRoot = ReactDOM.createRoot(contentContainer);
+          contentRoot.render(<TeamGrid />);
+      } else {
+          console.error("Content element not found!");
+      }
+
+    </script>
+  </body>
 </html>

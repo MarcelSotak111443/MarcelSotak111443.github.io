@@ -98,6 +98,33 @@
     await window.db.collection('notes').doc(id).delete(); // Delete from Firestore
     setNotes(notes.filter(note => note.id !== id)); // Update state
   };
+  const handleDownload = () => {
+  // Vytvorenie obsahu textového súboru
+  let textContent = '';
+  notes.forEach((note) => {
+    const dateStr = note.date.toDate
+      ? note.date.toDate().toLocaleDateString()
+      : new Date(note.date).toLocaleDateString();
+
+    textContent += `${dateStr}: ${note.note}\n`;
+  });
+
+  // Vytvorenie Blob a URL pre stiahnutie
+  const blob = new Blob([textContent], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+
+  // Vytvorenie dočasného <a> elementu a simulácia kliku
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'notes.txt'; // Názov súboru
+  document.body.appendChild(link);
+  link.click();
+
+  // Čistenie
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
 
   return (
     <div>
@@ -138,15 +165,16 @@
       />
       <br />
       <button onClick={handleAddNote}>Add Note</button>
+      <button onClick={handleDownload}>Download All Notes</button>
     </div>
   );
 }
 
 
       // Render the Navbar and Notes components
-      const navbarContainer = document.getElementById('navbar');
-      const navbarRoot = ReactDOM.createRoot(navbarContainer);
-      navbarRoot.render(<Navbar />);
+      const container = document.getElementById('navbar');
+      const root = ReactDOM.createRoot(container);
+      root.render(<Navbar />);
 
       const notesContainer = document.getElementById('notes');
       const notesRoot = ReactDOM.createRoot(notesContainer);
