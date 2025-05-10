@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- Firebase SDK (Compat Versions) -->
+    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore-compat.js"></script>
+
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+      }
+
+      .container {
+        display: grid;
+        grid-template-columns: 20% 80%;
+        height: 100vh;
+      }
+
+      nav {
+        background-color: #f4f4f4;
+        height: 100%;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      nav a {
+        text-decoration: none;
+        color: #333;
+        font-weight: bold;
+      }
+
+      .content {
+        padding: 30px;
+        overflow-y: auto;
+      }
+
+      .accordion-item {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        background-color: #f9f9f9;
+        padding: 10px;
+      }
+
+      .accordion-header {
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        background-color: #e0e0e0;
+        padding: 10px;
+        border-radius: 5px;
+      }
+
+      .accordion-body {
+        padding: 10px;
+        background-color: #fff;
+        border-top: 1px solid #ccc;
+        margin-top: 10px;
+      }
+
+      .note-form {
+        margin-top: 40px;
+        padding: 20px;
+        background-color: #eef;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      .note-form label {
+        font-weight: bold;
+        display: block;
+        margin: 10px 0 5px;
+      }
+
+      .note-form input,
+      .note-form textarea {
+        font-size: 14px;
+        padding: 8px;
+        width: 100%;
+        margin-bottom: 10px;
+      }
+
+      .note-form button {
+        margin-top: 10px;
+        padding: 10px 20px;
+        background-color: #3f51b5;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+    </style>
+
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyBMTgkcLQy25yv_y7A0ZYiFQLNF_EYQpCA",
+        authDomain: "databaseforwebsite-e35ea.firebaseapp.com",
+        projectId: "databaseforwebsite-e35ea",
+        storageBucket: "databaseforwebsite-e35ea.firebasestorage.app",
+        messagingSenderId: "359986441440",
+        appId: "1:359986441440:web:c83bf520dff81f093d3485",
+        measurementId: "G-WCV7HTD0X1"
+      };
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <div id="navbar"></div>
+      <div class="content" id="content-root"></div>
+    </div>
+
+    <script type="text/babel">
+      function Navbar() {
+        return (
+          <nav>
+            <a href="index.html">Projekt</a>
+            <a href="people.html">People</a>
+            <a href="note.html">Poznámky</a>
+          </nav>
+        );
+      }
+
+      function AccordionNote({ note, onDelete }) {
+  const [open, setOpen] = React.useState(false);
+
+  return (
+    <div className="accordion-item">
+      <div className="accordion-header" onClick={() => setOpen(!open)}>
+        <strong>
+          {note.date?.toDate
+            ? note.date.toDate().toLocaleDateString()
+            : new Date(note.date).toLocaleDateString()}
+        </strong>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          style={{
+            float: "right",
+            background: "none",
+            border: "none",
+            color: "red",
+            fontWeight: "bold",
+            fontSize: "16px",
+            cursor: "pointer"
+          }}
+        >
+          X
+        </button>
+      </div>
+      {open && (
+        <div className="accordion-body">
+          <p><strong>Vedúci projektu:</strong> {note.projectLead}</p>
+          <p><strong>Prítomní:</strong> {note.attendees}</p>
+          <p><strong>Téma stretnutia:</strong> {note.topic}</p>
+          <p><strong>Opis stretnutia:</strong> {note.note}</p>
+          <p><strong>Úlohy na stretnutie:</strong> {note.tasks}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+      function NewNoteForm({ setNotes }) {
+
+  const [date, setDate] = React.useState("");
+  const [title, setTitle] = React.useState("");
+  const [description, setDescription] = React.useState("");
+  const [tasks, setTasks] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+
+  const correctHash = "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3";
+
+  async function hashPassword(pass) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(pass);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("");
+  }
+
+  const handleSubmit = async () => {
+    if (!date || !title || !description || !tasks || !password) {
+      alert("Vyplň prosím všetky polia vrátane hesla.");
+      return;
+    }
+
+    const hashed = await hashPassword(password);
+    if (hashed !== correctHash) {
+      alert("Nesprávne heslo.");
+      return;
+    }
+
+    setLoading(true);
+
+    db.collection("notes")
+      .add({
+        date: firebase.firestore.Timestamp.fromDate(new Date(date)),
+        meetingTitle: title,
+        note: description,
+        tasks
+      })
+      .then((docRef) => {
+        setNotes((prevNotes) => [
+          {
+            id: docRef.id,
+            date: firebase.firestore.Timestamp.fromDate(new Date(date)),
+            meetingTitle: title,
+            note: description,
+            tasks
+          },
+          ...prevNotes
+        ]);
+        setDate("");
+        setTitle("");
+        setDescription("");
+        setTasks("");
+        setPassword("");
+        alert("Poznámka bola úspešne uložená ✅");
+      })
+      .catch((error) => {
+        console.error("Chyba pri ukladaní:", error);
+        alert("Nepodarilo sa uložiť poznámku.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  return (
+    <div className="note-form">
+      <h3>Nová poznámka</h3>
+
+      <label>Dátum stretnutia:</label>
+      <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+
+      <label>Téma stretnutia:</label>
+      <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
+
+      <label>Popis stretnutia:</label>
+      <textarea rows="3" value={description} onChange={(e) => setDescription(e.target.value)} />
+
+      <label>Úlohy na stretnutie:</label>
+      <textarea rows="3" value={tasks} onChange={(e) => setTasks(e.target.value)} />
+
+      <label>Heslo:</label>
+      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+
+      <button onClick={handleSubmit} disabled={loading}>
+        {loading ? "Ukladám..." : "Odoslať"}
+      </button>
+    </div>
+  );
+}
+
+
+      function Notes() {
+        const [notes, setNotes] = React.useState([]);
+
+        React.useEffect(() => {
+          db.collection("notes")
+            .orderBy("date", "desc")
+            .get()
+            .then((querySnapshot) => {
+              const loadedNotes = [];
+              querySnapshot.forEach((doc) => {
+                loadedNotes.push({ id: doc.id, ...doc.data() });
+              });
+              setNotes(loadedNotes);
+            });
+        }, []);
+
+        return (
+          <div>
+            <h2>Poznámky</h2>
+            {notes.map((note) => (
+  <AccordionNote
+    key={note.id}
+    note={note}
+    onDelete={async () => {
+      const input = prompt("Zadaj heslo na vymazanie:");
+      if (!input) return;
+
+      const correctHash = "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3";
+      const encoder = new TextEncoder();
+      const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(input));
+      const hash = Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("");
+
+      if (hash !== correctHash) {
+        alert("Nesprávne heslo.");
+        return;
+      }
+
+      await db.collection("notes").doc(note.id).delete();
+      setNotes((prev) => prev.filter((n) => n.id !== note.id));
+      alert("Poznámka bola vymazaná ✅");
+    }}
+  />
+))}
+
+            <NewNoteForm setNotes={setNotes} />
+
+          </div>
+        );
+      }
+
+      window.onload = () => {
+        ReactDOM.createRoot(document.getElementById('navbar')).render(<Navbar />);
+        ReactDOM.createRoot(document.getElementById('content-root')).render(<Notes />);
+      };
+    </script>
+  </body>
+</html>

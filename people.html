@@ -1,198 +1,108 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8" />
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link rel="stylesheet" href="styles.css">
-    
+    <link rel="stylesheet" href="style.css" />
+
     <!-- Firebase SDK (Compat Versions) -->
     <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-storage-compat.js"></script>
 
     <script>
-      // Initialize Firebase
       const firebaseConfig = {
         apiKey: "AIzaSyBMTgkcLQy25yv_y7A0ZYiFQLNF_EYQpCA",
         authDomain: "databaseforwebsite-e35ea.firebaseapp.com",
         projectId: "databaseforwebsite-e35ea",
-        storageBucket: "databaseforwebsite-e35ea.appspot.com",
+        storageBucket: "databaseforwebsite-e35ea.firebasestorage.app",
         messagingSenderId: "359986441440",
         appId: "1:359986441440:web:c83bf520dff81f093d3485",
         measurementId: "G-WCV7HTD0X1"
       };
-
       firebase.initializeApp(firebaseConfig);
       const db = firebase.firestore();
-      const storage = firebase.storage();
-      window.db = db; 
-      window.storage = storage;
+      window.db = db;
     </script>
-
   </head>
   <body>
     <div class="container">
       <div id="navbar"></div>
-      <div id="content"></div>
+      <div class="content" id="content-root"></div>
     </div>
 
     <script type="text/babel">
       function Navbar() {
         return (
           <nav>
-            <a href="project.html">Projekt</a>
+            <a href="index.html">Projekt</a>
             <a href="people.html">People</a>
-            <a href="notes.html">Poznámky</a>
+            <a href="note.html">Poznámky</a>
           </nav>
         );
       }
 
-      function TeamGrid() {
-        const [teamMembers, setTeamMembers] = React.useState([]);
-        const [newMemberName, setNewMemberName] = React.useState("");
-        const [newMemberInfo, setNewMemberInfo] = React.useState("");
-        const [image, setImage] = React.useState(null);
-
-        React.useEffect(() => {
-          const fetchTeamMembers = async () => {
-            try {
-              if (!window.db) {
-                console.error("Firestore is not initialized properly.");
-                return;
-              }
-              const querySnapshot = await window.db.collection("teamMates").get();
-              const members = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-              }));
-              setTeamMembers(members);
-            } catch (err) {
-              console.error("Error loading team members:", err);
-            }
-          };
-
-          fetchTeamMembers();
-        }, []);
-
-        const handleAddMember = async () => {
-          if (!newMemberName.trim() || !newMemberInfo.trim() || !image) {
-            alert("Please enter name, description, and select an image.");
-            return;
-          }
-
-          // 1. Nahranie obrázka do Firebase Storage
-          const storageRef = window.storage.ref(`teamImages/${image.name}`);
-          await storageRef.put(image);
-          const imageUrl = await storageRef.getDownloadURL();
-
-          // 2. Uloženie člena do Firestore s URL obrázka
-          const newMember = {
-            name: newMemberName,
-            imgSrc: imageUrl,
-            info: newMemberInfo
-          };
-
-          try {
-            const docRef = await window.db.collection("teamMates").add(newMember);
-            setTeamMembers(prevMembers => [...prevMembers, { id: docRef.id, ...newMember }]);
-            setNewMemberName("");
-            setNewMemberInfo("");
-            setImage(null);
-          } catch (err) {
-            console.error("Error adding team member:", err);
-          }
-        };
-
-        const handleRemoveMember = async (id) => {
-          try {
-            await window.db.collection("teamMates").doc(id).delete();
-            setTeamMembers(prevMembers => prevMembers.filter(member => member.id !== id));
-          } catch (err) {
-            console.error("Error removing team member:", err);
-          }
-        };
-
-        const handleChangeImage = async (id) => {
-          const fileInput = document.createElement("input");
-          fileInput.type = "file";
-          fileInput.accept = "image/*";
-          fileInput.onchange = async (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const storageRef = window.storage.ref(`teamImages/${file.name}`);
-            await storageRef.put(file);
-            const imageUrl = await storageRef.getDownloadURL();
-
-            await window.db.collection("teamMates").doc(id).update({ imgSrc: imageUrl });
-
-            setTeamMembers(prevMembers =>
-              prevMembers.map(member => (member.id === id ? { ...member, imgSrc: imageUrl } : member))
-            );
-          };
-
-          fileInput.click();
-        };
-
+      function MemberCard({ photo, name, description, phone, email }) {
         return (
-          <div>
-            <div className="team-grid">
-              <div className="team-members">
-                {teamMembers.map((member) => (
-                  <div key={member.id} className="team-member">
-                    <button className="remove-button" onClick={() => handleRemoveMember(member.id)}>x</button>
-                    <img 
-                      src={member.imgSrc} 
-                      alt={member.name} 
-                      style={{ cursor: "pointer", width: "100px", height: "100px", objectFit: "cover" }} 
-                      onClick={() => handleChangeImage(member.id)} 
-                    />
-                    <p>{member.name}</p>
-                    <p>{member.info}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="add-member-form">
-              <h3>Add New Member</h3>
-              <input
-                type="text"
-                placeholder="Name"
-                value={newMemberName}
-                onChange={(e) => setNewMemberName(e.target.value)}
-              />
-              <textarea
-                rows={3}
-                wrap="soft"
-                placeholder="Description"
-                value={newMemberInfo}
-                onChange={(e) => setNewMemberInfo(e.target.value)}
-              />
-              <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files[0])} />
-              <button onClick={handleAddMember}>Add Member</button>
-            </div>
+          <div className="member-card">
+            <img src={photo} alt={name} />
+            <h3>{name}</h3>
+            <p>{description}</p>
+            <p>📞 {phone}</p>
+            <p>✉️ {email}</p>
           </div>
         );
       }
 
+      function TeamGrid() {
+        const members = [
+          {
+            photo: "94385142_2829327963828973_4440639989541240832_n.jpg",
+            name: "Marek Štrba",
+            description: "AI",
+            phone: "",
+            email: ""
+          },
+          {
+            photo: "299356176_5338221496253434_723693211900889902_n.jpg",
+            name: "Samuel Michalčík",
+            description: "kyberbezpečnosť",
+            phone: "",
+            email: ""
+          },
+          {
+            photo: "494822209_706394631897096_4208019376202437711_n.jpg",
+            name: "Antonio Kiš",
+            description: "programovanie",
+            phone: "",
+            email: ""
+          },
+          {
+            photo: "d4312013-8174-420c-8dc3-f7521e2bf6d3.jpg",
+            name: "Marcel Soták",
+            description: "kyberbezpečnosť",
+            phone: "+421940751820",
+            email: "xsotakm@stuba.sk"
+          }
+        ];
+
+        return (
+          <div className="team-grid">
+            {members.map((member, index) => (
+              <MemberCard key={index} {...member} />
+            ))}
+          </div>
+        );
+      }
+
+      // Render Navbar
       const navbarContainer = document.getElementById('navbar');
-      const contentContainer = document.getElementById('content');
+      ReactDOM.createRoot(navbarContainer).render(<Navbar />);
 
-      if (navbarContainer) {
-          const navbarRoot = ReactDOM.createRoot(navbarContainer);
-          navbarRoot.render(<Navbar />);
-      } else {
-          console.error("Navbar element not found!");
-      }
-
-      if (contentContainer) {
-          const contentRoot = ReactDOM.createRoot(contentContainer);
-          contentRoot.render(<TeamGrid />);
-      } else {
-          console.error("Content element not found!");
-      }
-
+      // Render Team Grid
+      const contentContainer = document.getElementById('content-root');
+      ReactDOM.createRoot(contentContainer).render(<TeamGrid />);
     </script>
   </body>
 </html>
