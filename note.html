@@ -12,93 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore-compat.js"></script>
 
     <style>
-      body, html {
-        margin: 0;
-        padding: 0;
-        font-family: sans-serif;
-      }
-
-      .container {
-        display: grid;
-        grid-template-columns: 20% 80%;
-        height: 100vh;
-      }
-
-      nav {
-        background-color: #f4f4f4;
-        height: 100%;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-
-      nav a {
-        text-decoration: none;
-        color: #333;
-        font-weight: bold;
-      }
-
-      .content {
-        padding: 30px;
-        overflow-y: auto;
-      }
-
-      .accordion-item {
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        margin-bottom: 15px;
-        background-color: #f9f9f9;
-        padding: 10px;
-      }
-
-      .accordion-header {
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: bold;
-        background-color: #e0e0e0;
-        padding: 10px;
-        border-radius: 5px;
-      }
-
-      .accordion-body {
-        padding: 10px;
-        background-color: #fff;
-        border-top: 1px solid #ccc;
-        margin-top: 10px;
-      }
-
-      .note-form {
-        margin-top: 40px;
-        padding: 20px;
-        background-color: #eef;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      }
-
-      .note-form label {
-        font-weight: bold;
-        display: block;
-        margin: 10px 0 5px;
-      }
-
-      .note-form input,
-      .note-form textarea {
-        font-size: 14px;
-        padding: 8px;
-        width: 100%;
-        margin-bottom: 10px;
-      }
-
-      .note-form button {
-        margin-top: 10px;
-        padding: 10px 20px;
-        background-color: #3f51b5;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-      }
+      
     </style>
 
     <script>
@@ -163,11 +77,12 @@
       </div>
       {open && (
         <div className="accordion-body">
+          <p><strong>Stretnutie:</strong> {note.place}</p>
           <p><strong>Vedúci projektu:</strong> {note.projectLead}</p>
           <p><strong>Prítomní:</strong> {note.attendees}</p>
           <p><strong>Téma stretnutia:</strong> {note.topic}</p>
-          <p><strong>Opis stretnutia:</strong> {note.note}</p>
-          <p><strong>Úlohy na stretnutie:</strong> {note.tasks}</p>
+          <p><strong>Opis stretnutia:</strong><br />{note.note.split("\n").map((line, i) => <span key={i}>{line}<br /></span>)}</p>
+          <p><strong>Úlohy na stretnutie:</strong><br />{note.tasks.split("\n").map((line, i) => <span key={i}>{line}<br /></span>)}</p>
         </div>
       )}
     </div>
@@ -210,17 +125,19 @@
 
     db.collection("notes")
       .add({
-        date: firebase.firestore.Timestamp.fromDate(new Date(date)),
-        meetingTitle: title,
+       date: firebase.firestore.Timestamp.fromDate(new Date(date)),
+        topic: title,
         note: description,
-        tasks
+        tasks,
+        attendees: "Bc. Marek Štrba, Bc. Marcel Soták, Bc. Antonio Kiš, Bc. Samuel Michalčík",
+       projectLead: "Ing. Štefan Balogh, PhD."
       })
       .then((docRef) => {
         setNotes((prevNotes) => [
           {
             id: docRef.id,
             date: firebase.firestore.Timestamp.fromDate(new Date(date)),
-            meetingTitle: title,
+            topic: title,
             note: description,
             tasks
           },
