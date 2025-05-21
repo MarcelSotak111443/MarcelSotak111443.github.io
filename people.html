@@ -36,9 +36,10 @@
       function Navbar() {
         return (
           <nav>
-            <a href="index.html">Projekt</a>
-            <a href="people.html">People</a>
-            <a href="note.html">Poznámky</a>
+              <a href="index.html">Projekt</a>
+              <a href="people.html">Tím</a>
+              <a href="note.html">Zápisnice</a>
+              <a href="manual.html">Návod</a>
           </nav>
         );
       }
@@ -49,7 +50,7 @@
             <img src={photo} alt={name} />
             <h3>{name}</h3>
             <p>{description}</p>
-            <p>📞 {phone}</p>
+        
             <p>✉️ {email}</p>
           </div>
         );

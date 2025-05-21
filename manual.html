@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- Firebase SDK (Compat Versions) -->
+    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore-compat.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <div id="navbar"></div>
+      <div class="content">
+        
+
+  
+     
+        
+
+        <div class="section">
+          <h2>Návod na inštaláciu programu</h2>
+          <p>Skript na automatizáciu skenovania sa pripája do NetBoxu. Pre školské účely je NetBox sprístupnený na IP adrese <strong>147.175.106.21</strong>. Pre budúce použitie je k dispozícii inštalačný návod nižšie.</p>
+          
+          <h3>Požiadavky</h3>
+          <ul>
+            <li>Operačný systém: Linux (napr. Ubuntu 22.04) alebo Windows</li>
+            <li>Python 3.10 alebo novší</li>
+            <li>NetBox (verzia 4.1.4 alebo novšia) – <a href="https://netboxlabs.com/docs/netbox/en/stable/installation/3-netbox/" target="_blank">návod na inštaláciu</a></li>
+            <li>Nástroj nmap</li>
+          </ul>
+
+          <h3>Inštalácia</h3>
+          <ol>
+            <li>Naklonujte repozitár:
+              <pre><code>git clone https://github.com/Faraon40/UniNetInsight</code></pre>
+            </li>
+            <li>Presuňte sa do priečinka:
+              <pre><code>cd UniNetInsight</code></pre>
+            </li>
+            <li>Vytvorte a aktivujte virtuálne prostredie:
+              <pre><code># Linux
+python3 -m venv venv
+source venv/bin/activate
+
+# Windows
+python -m venv venv
+venv\Scripts\activate</code></pre>
+            </li>
+            <li>Nainštalujte závislosti:
+              <pre><code>pip install -r requirements.txt</code></pre>
+            </li>
+            <li>Nainštalujte nmap:
+              <pre><code># Linux
+sudo apt install nmap
+
+# Windows
+Stiahnite z: https://nmap.org/download.html</code></pre>
+            </li>
+            <li>Nakonfigurujte súbor <code>configs/config.yml</code>:
+              <pre><code>api_token: &lt;váš_token&gt;
+base_url: https://147.175.106.21/</code></pre>
+              
+            </li>
+          </ol>
+        </div>
+        <div class="section" style="text-align: center; margin-top: 20px;">
+    <a href="https://github.com/Faraon40/UniNetInsight" target="_blank" style="font-size: 18px; font-weight: bold;">
+      🔗 GitHub Repozitár
+    </a>
+  </div>
+      </div>
+      
+    </div>
+
+    <script type="text/babel">
+      function Navbar() {
+        return (
+          <nav>
+            <a href="index.html">Projekt</a>
+            <a href="people.html">Tím</a>
+            <a href="note.html">Zápisnice</a>
+            <a href="manual.html">Návod</a>
+          </nav>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById('navbar')).render(<Navbar />);
+    </script>
+  </body>
+</html>
